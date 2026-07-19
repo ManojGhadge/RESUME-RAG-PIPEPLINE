@@ -1,0 +1,37 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# PDF processing
+PyMuPDF==1.24.3
+
+# Embeddings
+sentence-transformers==2.7.0
+
+# Vector database
+chromadb==0.5.0
+
+# LLM abstraction (thin interface only)
+langchain==0.2.3
+langchain-community==0.2.3
+
+# Relational DB
+sqlalchemy==2.0.30
+pymysql==1.1.0
+cryptography==42.0.7
+
+# HTTP client (for Ollama calls)
+httpx==0.27.0
+
+# Utilities
+python-multipart==0.0.9
+pydantic==2.7.1
+pydantic-settings==2.3.0
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.2.0
+pytest-asyncio==0.23.7
+
+# Auth
+python-jose[cryptography]==3.3.0

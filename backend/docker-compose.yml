@@ -1,0 +1,29 @@
+# For developers who don't have MySQL installed locally.
+# You already have MySQL locally, so this is here for completeness / deployment reference.
+#
+# To use:  docker compose up -d
+# This starts MySQL only — the backend can be run locally with uvicorn.
+
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: Mano@2005
+      MYSQL_DATABASE: resume_rag
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pMano@2005"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
