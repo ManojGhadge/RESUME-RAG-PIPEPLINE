@@ -65,3 +65,28 @@ async def upload_resume(
         filename=filename,
         chunk_count=len(chunks),
     )
+
+
+@router.get(
+    "/resumes",
+    summary="List all resumes for the current user",
+)
+def list_resumes(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Returns all resumes uploaded by the current user, newest first."""
+    resumes = (
+        db.query(Resume)
+        .filter(Resume.user_id == current_user.id)
+        .order_by(Resume.uploaded_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "filename": r.filename,
+            "uploaded_at": r.uploaded_at.isoformat(),
+        }
+        for r in resumes
+    ]
