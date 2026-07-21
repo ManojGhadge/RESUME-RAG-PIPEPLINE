@@ -22,7 +22,7 @@ class OpenAIProvider(LLMProvider):
     """Calls OpenAI's Chat Completions API."""
 
     def __init__(self):
-        self._url = "https://api.openai.com/v1/chat/completions"
+        self._url = settings.openai_api_url
         self._model = settings.openai_model
         self._api_key = settings.openai_api_key
         logger.info(f"OpenAIProvider ready: model={self._model}")

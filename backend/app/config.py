@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # OpenAI
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    openai_api_url: str = "https://api.openai.com/v1/chat/completions"
 
     # Embedding model
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
