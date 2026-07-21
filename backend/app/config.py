@@ -11,9 +11,16 @@ class Settings(BaseSettings):
     # Database
     mysql_url: str = "mysql+pymysql://root:Mano%402005@localhost:3306/resume_rag"
     
-    # Ollama / LLM
+    # LLM Provider Configuration
+    llm_provider: str = "ollama"  # "ollama" or "openai"
+    
+    # Ollama
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "llama3:8b"
+
+    # OpenAI
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
 
     # Embedding model
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"

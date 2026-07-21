@@ -46,7 +46,7 @@ async def no_chunks_handler(request: Request, exc: NoChunksFoundError):
 async def llm_error_handler(request: Request, exc: LLMError):
     return JSONResponse(
         status_code=503,
-        content={"detail": str(exc) or "LLM service unavailable. Is Ollama running?"},
+        content={"detail": str(exc) or "LLM service unavailable. Please check your LLM configuration and logs."},
     )
 
 
