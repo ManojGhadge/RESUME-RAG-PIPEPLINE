@@ -6,6 +6,7 @@ uvicorn[standard]==0.29.0
 PyMuPDF==1.24.3
 
 # Embeddings
+# torch is installed separately in Dockerfile as CPU-only build (avoids 2GB CUDA download)
 sentence-transformers==2.7.0
 
 # Vector database
