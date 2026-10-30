@@ -1,0 +1,38 @@
+# Lightweight requirements for CI testing ONLY.
+# Heavy ML packages (torch, sentence-transformers, chromadb) are mocked
+# in conftest.py so they don't need to be installed for pytest to run.
+# This makes CI install in ~30 seconds instead of 15+ minutes.
+
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# PDF processing (pre-built wheel, fast install)
+PyMuPDF==1.25.5
+
+# Relational DB
+sqlalchemy==2.0.36
+pymysql==1.1.1
+cryptography==44.0.0
+
+# HTTP client (for Ollama/OpenAI calls)
+httpx==0.28.1
+
+# Utilities
+python-multipart==0.0.20
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+
+# Email validation — required by pydantic EmailStr in schemas.py
+email-validator==2.2.0
+
+# Password hashing — used directly in auth_service.py
+bcrypt==4.2.1
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.2
+
+# Auth — JWT
+python-jose[cryptography]==3.3.0

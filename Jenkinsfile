@@ -25,6 +25,8 @@ pipeline {
         }
 
         // ── 2. BACKEND TESTS ──────────────────────────────────────────────────
+        // Uses requirements-ci.txt — lightweight, no torch/chromadb/sentence-transformers
+        // All ML packages are mocked in conftest.py so tests pass without them
         stage('Backend: Install & Test') {
             steps {
                 dir('backend') {
@@ -32,7 +34,7 @@ pipeline {
                         python3 -m venv .venv
                         . .venv/bin/activate
                         pip install --upgrade pip --quiet
-                        pip install -r requirements.txt --quiet
+                        pip install -r requirements-ci.txt --quiet
                     '''
                     sh '''
                         . .venv/bin/activate
@@ -79,6 +81,7 @@ pipeline {
 
         // ── 4. DOCKER BUILD ───────────────────────────────────────────────────
         // Uses expression{} to match "origin/master" which is how Jenkins sets GIT_BRANCH
+        // Docker build uses the FULL requirements.txt (with torch, chromadb, etc.)
         stage('Docker: Build Images') {
             when {
                 expression {

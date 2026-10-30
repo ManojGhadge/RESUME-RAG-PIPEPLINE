@@ -5,14 +5,10 @@ uvicorn[standard]==0.34.0
 # PDF processing (pre-built wheel for Python 3.13)
 PyMuPDF==1.25.5
 
-# PyTorch CPU-only (must come before sentence-transformers to avoid 2GB CUDA build)
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.2.2+cpu
-
-# Embeddings (mocked in CI tests)
+# Embeddings — pulls torch as dependency at runtime
 sentence-transformers==3.3.1
 
-# Vector database (mocked in CI tests)
+# Vector database
 chromadb==0.6.3
 
 # Relational DB
