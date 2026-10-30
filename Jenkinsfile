@@ -78,7 +78,7 @@ pipeline {
         }
 
         // ── 4. DOCKER BUILD ───────────────────────────────────────────────────
-        // Runs on master/main branch (GIT_BRANCH includes origin/ prefix)
+        // Uses expression{} to match "origin/master" which is how Jenkins sets GIT_BRANCH
         stage('Docker: Build Images') {
             when {
                 expression {
@@ -91,9 +91,19 @@ pipeline {
             steps {
                 script {
                     def tag = env.GIT_COMMIT.take(8)
+
+                    // Pre-pull base images with retry (handles TLS timeout on first attempt)
+                    retry(3) {
+                        sh 'docker pull python:3.11-slim'
+                    }
+                    retry(3) {
+                        sh 'docker pull node:20-alpine'
+                        sh 'docker pull nginx:1.25-alpine'
+                    }
+
                     sh "docker build -t ${BACKEND_IMAGE}:${tag} -t ${BACKEND_IMAGE}:latest backend/"
                     sh "docker build -t ${FRONTEND_IMAGE}:${tag} -t ${FRONTEND_IMAGE}:latest frontend/"
-                    echo "Built images: ${BACKEND_IMAGE}:${tag} and ${FRONTEND_IMAGE}:${tag}"
+                    echo "Built: ${BACKEND_IMAGE}:${tag} and ${FRONTEND_IMAGE}:${tag}"
                 }
             }
         }
@@ -116,7 +126,7 @@ pipeline {
                         sh "docker push ${BACKEND_IMAGE}:latest"
                         sh "docker push ${FRONTEND_IMAGE}:${tag}"
                         sh "docker push ${FRONTEND_IMAGE}:latest"
-                        echo "Pushed to Docker Hub: ${BACKEND_IMAGE}:latest"
+                        echo "Pushed to Docker Hub: ${BACKEND_IMAGE}:latest and ${FRONTEND_IMAGE}:latest"
                     }
                 }
             }
