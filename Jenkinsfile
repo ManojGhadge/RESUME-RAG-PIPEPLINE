@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // ── Docker Hub ────────────────────────────────────────────────────────
         DOCKER_HUB_USER    = credentials('DOCKER_HUB_USER')
         BACKEND_IMAGE      = "${DOCKER_HUB_USER}/rag-resume-backend"
         FRONTEND_IMAGE     = "${DOCKER_HUB_USER}/rag-resume-frontend"
@@ -79,15 +78,22 @@ pipeline {
         }
 
         // ── 4. DOCKER BUILD ───────────────────────────────────────────────────
+        // Runs on master/main branch (GIT_BRANCH includes origin/ prefix)
         stage('Docker: Build Images') {
             when {
-                anyOf { branch 'master'; branch 'main' }
+                expression {
+                    return env.GIT_BRANCH == 'master' ||
+                           env.GIT_BRANCH == 'main' ||
+                           env.GIT_BRANCH == 'origin/master' ||
+                           env.GIT_BRANCH == 'origin/main'
+                }
             }
             steps {
                 script {
                     def tag = env.GIT_COMMIT.take(8)
                     sh "docker build -t ${BACKEND_IMAGE}:${tag} -t ${BACKEND_IMAGE}:latest backend/"
                     sh "docker build -t ${FRONTEND_IMAGE}:${tag} -t ${FRONTEND_IMAGE}:latest frontend/"
+                    echo "Built images: ${BACKEND_IMAGE}:${tag} and ${FRONTEND_IMAGE}:${tag}"
                 }
             }
         }
@@ -95,7 +101,12 @@ pipeline {
         // ── 5. DOCKER PUSH ────────────────────────────────────────────────────
         stage('Docker: Push Images') {
             when {
-                anyOf { branch 'master'; branch 'main' }
+                expression {
+                    return env.GIT_BRANCH == 'master' ||
+                           env.GIT_BRANCH == 'main' ||
+                           env.GIT_BRANCH == 'origin/master' ||
+                           env.GIT_BRANCH == 'origin/main'
+                }
             }
             steps {
                 script {
@@ -105,6 +116,7 @@ pipeline {
                         sh "docker push ${BACKEND_IMAGE}:latest"
                         sh "docker push ${FRONTEND_IMAGE}:${tag}"
                         sh "docker push ${FRONTEND_IMAGE}:latest"
+                        echo "Pushed to Docker Hub: ${BACKEND_IMAGE}:latest"
                     }
                 }
             }
