@@ -3,17 +3,10 @@ pipeline {
 
     environment {
         // ── Docker Hub ────────────────────────────────────────────────────────
-        // Store your Docker Hub username as a Jenkins Secret Text credential
-        // with ID = DOCKER_HUB_USER
         DOCKER_HUB_USER    = credentials('DOCKER_HUB_USER')
         BACKEND_IMAGE      = "${DOCKER_HUB_USER}/rag-resume-backend"
         FRONTEND_IMAGE     = "${DOCKER_HUB_USER}/rag-resume-frontend"
         DOCKER_CREDENTIALS = 'dockerhub-credentials'
-
-        // ── Deployment ────────────────────────────────────────────────────────
-        DEPLOY_HOST        = credentials('DEPLOY_HOST')   // e.g. ubuntu@1.2.3.4
-        SSH_CREDENTIALS    = 'deploy-ssh-key'
-        DEPLOY_ENV_FILE    = credentials('backend-env-file')
     }
 
     options {
@@ -24,9 +17,7 @@ pipeline {
 
     stages {
 
-        // ────────────────────────────────────────────────────────────────────
-        // 1. CHECKOUT
-        // ────────────────────────────────────────────────────────────────────
+        // ── 1. CHECKOUT ───────────────────────────────────────────────────────
         stage('Checkout') {
             steps {
                 checkout scm
@@ -34,26 +25,18 @@ pipeline {
             }
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // 2. BACKEND — install dependencies and run tests
-        //    All DB / LLM / embeddings are mocked — no external services needed
-        // ────────────────────────────────────────────────────────────────────
+        // ── 2. BACKEND TESTS ──────────────────────────────────────────────────
         stage('Backend: Install & Test') {
             steps {
                 dir('backend') {
                     sh '''
-                        # Use python3 (available in the Jenkins container)
-                        PYTHON=$(command -v python3.11 || command -v python3 || echo python3)
-                        echo "Using Python: $PYTHON"
-                        $PYTHON -m venv .venv
+                        python3 -m venv .venv
                         . .venv/bin/activate
                         pip install --upgrade pip --quiet
                         pip install -r requirements.txt --quiet
                     '''
                     sh '''
                         . .venv/bin/activate
-
-                        # CI environment — no real MySQL, Ollama, or embeddings
                         export MYSQL_URL="sqlite+pysqlite:///:memory:"
                         export LLM_PROVIDER=ollama
                         export OLLAMA_URL=http://localhost:11434
@@ -74,7 +57,6 @@ pipeline {
                         export SMTP_USER=""
                         export SMTP_PASSWORD=""
                         export SMTP_FROM="noreply@ci.local"
-
                         pytest tests/ -v --tb=short --junitxml=test-results.xml
                     '''
                 }
@@ -86,9 +68,7 @@ pipeline {
             }
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // 3. FRONTEND — install and build
-        // ────────────────────────────────────────────────────────────────────
+        // ── 3. FRONTEND BUILD ─────────────────────────────────────────────────
         stage('Frontend: Install & Build') {
             steps {
                 dir('frontend') {
@@ -98,16 +78,10 @@ pipeline {
             }
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // 4. DOCKER — build images (main/master branch only)
-        // ────────────────────────────────────────────────────────────────────
+        // ── 4. DOCKER BUILD ───────────────────────────────────────────────────
         stage('Docker: Build Images') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                    tag pattern: 'v\\d+\\.\\d+\\.\\d+', comparator: 'REGEXP'
-                }
+                anyOf { branch 'master'; branch 'main' }
             }
             steps {
                 script {
@@ -118,16 +92,10 @@ pipeline {
             }
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // 5. DOCKER — push images to Docker Hub
-        // ────────────────────────────────────────────────────────────────────
+        // ── 5. DOCKER PUSH ────────────────────────────────────────────────────
         stage('Docker: Push Images') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                    tag pattern: 'v\\d+\\.\\d+\\.\\d+', comparator: 'REGEXP'
-                }
+                anyOf { branch 'master'; branch 'main' }
             }
             steps {
                 script {
@@ -141,56 +109,19 @@ pipeline {
                 }
             }
         }
-
-        // ────────────────────────────────────────────────────────────────────
-        // 6. DEPLOY — SSH to production server, pull and restart containers
-        // ────────────────────────────────────────────────────────────────────
-        stage('Deploy to Server') {
-            when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                }
-            }
-            steps {
-                script {
-                    def tag = env.GIT_COMMIT.take(8)
-                    sshagent(credentials: [SSH_CREDENTIALS]) {
-                        sh """
-                            # Upload the .env file to the server
-                            scp -o StrictHostKeyChecking=no ${DEPLOY_ENV_FILE} ${DEPLOY_HOST}:~/rag-resume/.env
-
-                            # Upload the production docker-compose file
-                            scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${DEPLOY_HOST}:~/rag-resume/docker-compose.yml
-
-                            # Pull new images and restart
-                            ssh -o StrictHostKeyChecking=no ${DEPLOY_HOST} \\
-                                "cd ~/rag-resume && \\
-                                 export BACKEND_IMAGE=${BACKEND_IMAGE}:${tag} && \\
-                                 export FRONTEND_IMAGE=${FRONTEND_IMAGE}:${tag} && \\
-                                 docker compose pull && \\
-                                 docker compose up -d --remove-orphans && \\
-                                 docker image prune -f"
-                        """
-                    }
-                }
-            }
-        }
     }
 
     post {
         success {
-            echo "✅ Build #${env.BUILD_NUMBER} passed on branch ${env.GIT_BRANCH}"
+            echo "✅ Build #${env.BUILD_NUMBER} passed — ${env.GIT_BRANCH}"
         }
         failure {
-            echo "❌ Build #${env.BUILD_NUMBER} FAILED on branch ${env.GIT_BRANCH}"
-            // Uncomment to send email on failure:
-            // mail to: 'you@example.com',
-            //      subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-            //      body: "Details: ${env.BUILD_URL}"
+            echo "❌ Build #${env.BUILD_NUMBER} FAILED — ${env.GIT_BRANCH}"
         }
         always {
-            cleanWs()
+            node('built-in') {
+                cleanWs()
+            }
         }
     }
 }
