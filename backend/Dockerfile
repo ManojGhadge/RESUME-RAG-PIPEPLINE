@@ -3,19 +3,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps needed by PyMuPDF and cryptography
+# Install only minimal system deps
+# cryptography now ships pre-built wheels so gcc is NOT needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libffi-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install CPU-only PyTorch FIRST — prevents pip from pulling the 2GB CUDA build
-# when sentence-transformers resolves its torch dependency later
+# Install CPU-only PyTorch FIRST to avoid pulling the 2GB CUDA build
 RUN pip install --no-cache-dir \
     torch==2.2.2+cpu \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Now install everything else (sentence-transformers will reuse the CPU torch above)
+# Install all other dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

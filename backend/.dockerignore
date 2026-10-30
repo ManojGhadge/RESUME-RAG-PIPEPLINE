@@ -1,9 +1,37 @@
+# Python
 venv/
+.venv/
 __pycache__/
 *.pyc
-.git
+*.pyo
+*.pyd
+.Python
+
+# Virtual envs
+env/
+ENV/
+
+# Data (large binary files - mounted at runtime)
+data/
+
+# Git
+.git/
 .gitignore
+
+# Secrets
 .env
-data/chroma/
-data/uploads/
+.env.*
+
+# Tests (not needed in production image)
 tests/
+
+# CI files
+requirements-ci.txt
+pytest.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
