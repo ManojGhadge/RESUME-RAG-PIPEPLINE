@@ -3,20 +3,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install only minimal system deps
-# cryptography now ships pre-built wheels so gcc is NOT needed
+# Minimal system deps — no gcc needed (all packages have pre-built wheels)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install CPU-only PyTorch FIRST to avoid pulling the 2GB CUDA build
-RUN pip install --no-cache-dir \
-    torch==2.2.2+cpu \
-    --extra-index-url https://download.pytorch.org/whl/cpu
-
-# Install all other dependencies
+# Install all Python dependencies
+# sentence-transformers will pull torch CPU automatically via its dependencies
+# We don't pre-install torch separately to avoid hash/CDN issues
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
