@@ -5,13 +5,35 @@ Patches: DB init, embedding model, ChromaDB, and auth (get_current_user).
 
 import sys
 import os
-from types import SimpleNamespace
+from types import SimpleNamespace, ModuleType
 from unittest.mock import patch, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Inject mock modules for heavy ML packages BEFORE any app imports happen.
+# This lets embedding_service.py and vectorstore_service.py import
+# sentence_transformers and chromadb without them being installed.
+# ──────────────────────────────────────────────────────────────────────────
+
+# Mock sentence_transformers
+_mock_st_module = ModuleType("sentence_transformers")
+_mock_st_module.SentenceTransformer = MagicMock()
+sys.modules["sentence_transformers"] = _mock_st_module
+
+# Mock chromadb
+_mock_chroma_module = ModuleType("chromadb")
+_mock_chroma_module.PersistentClient = MagicMock()
+sys.modules["chromadb"] = _mock_chroma_module
+
+# Mock torch (needed by sentence_transformers internally)
+_mock_torch_module = ModuleType("torch")
+_mock_torch_module.Tensor = MagicMock
+sys.modules["torch"] = _mock_torch_module
 
 
 def make_resume(resume_id: str = "test-resume-id") -> SimpleNamespace:
