@@ -2,26 +2,21 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 
-# PDF processing
+# PDF processing (pre-built wheel for Python 3.13)
 PyMuPDF==1.25.5
 
-# Embeddings
-# torch is installed separately in Dockerfile as CPU-only build (avoids 2GB CUDA download)
+# Embeddings (mocked in CI tests)
 sentence-transformers==3.3.1
 
-# Vector database
+# Vector database (mocked in CI tests)
 chromadb==0.6.3
-
-# LLM abstraction (thin interface only)
-langchain==0.3.14
-langchain-community==0.3.14
 
 # Relational DB
 sqlalchemy==2.0.36
 pymysql==1.1.1
 cryptography==44.0.0
 
-# HTTP client (for Ollama calls)
+# HTTP client (for Ollama/OpenAI calls)
 httpx==0.28.1
 
 # Utilities
@@ -30,9 +25,15 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
 
+# Email validation — required by pydantic EmailStr in schemas.py
+email-validator==2.2.0
+
+# Password hashing — used directly in auth_service.py
+bcrypt==4.2.1
+
 # Testing
 pytest==8.3.4
 pytest-asyncio==0.25.2
 
-# Auth
+# Auth — JWT
 python-jose[cryptography]==3.3.0
