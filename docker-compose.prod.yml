@@ -1,0 +1,70 @@
+version: "3.9"
+
+# Production docker-compose
+# The CI pipeline copies this file to the server as docker-compose.yml
+# and sets BACKEND_IMAGE / FRONTEND_IMAGE env vars before running.
+
+services:
+
+  # ── MySQL ────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: resume_rag
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-net
+
+  # ── Backend (FastAPI) ─────────────────────────────────────────────────────
+  backend:
+    image: ${BACKEND_IMAGE:-rag-resume-backend:latest}
+    restart: unless-stopped
+    env_file: .env           # copied to server by Jenkins before deploy
+    environment:
+      - MYSQL_URL=mysql+pymysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/resume_rag
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - chroma_data:/app/data/chroma
+      - uploads_data:/app/data/uploads
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app-net
+
+  # ── Frontend (Nginx + React) ──────────────────────────────────────────────
+  frontend:
+    image: ${FRONTEND_IMAGE:-rag-resume-frontend:latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"       # uncomment when you add TLS / certbot
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  mysql_data:
+  chroma_data:
+  uploads_data:
+
+networks:
+  app-net:
+    driver: bridge
